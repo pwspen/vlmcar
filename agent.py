@@ -44,7 +44,7 @@ class ResponseType(BaseModel):
     notes: str
 
 class AgentServer:
-    def __init__(self, host='localhost', port=3001):
+    def __init__(self, host='0.0.0.0', port=3001):
         self.host = host
         self.port = port
         self.robot = LocalRobot()
