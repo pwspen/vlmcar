@@ -173,7 +173,7 @@ class AgentServer:
             await self.broadcast_to_clients({
                 "image": self.image_str,
                 "dist": dist,
-                "command": result.command,
+                "action": result.command,
                 "notes": result.notes
             })
             
