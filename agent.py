@@ -38,6 +38,7 @@ class Models:
     novapro = 'amazon/nova-pro-v1'
     qwenvl = 'qwen/qwen-2-vl-72b-instruct'
     gemini = 'google/gemini-flash-1.5'
+    claude = 'anthropic/claude-3.5-sonnet'
 
 class ResponseType(BaseModel):
     image_desc: str
@@ -64,7 +65,7 @@ class AgentServer:
 
         # Initialize the model and agent
         self.model = OpenAIModel(
-            model_name=Models.gemini,
+            model_name=Models.claude,
             base_url='https://openrouter.ai/api/v1',
             api_key=api_key
         )
@@ -72,15 +73,9 @@ class AgentServer:
         target = 'parrot statue'
         self.agent = Agent(
             self.model,
-            system_prompt=f'You are driving a robot car. Based on the most recent image, your distance'
-                        f'and your'
-                        f'logs from past movement cycles, move around the room to find the {target}.'
-                        f'You move by sending api commands as described in the tool description.'
-                        f'Make sure to avoid obstacles! DO NOT move forward if something is very close'
-                        f'in front of you. If you get too close to something, either back up or'
-                        f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.'
-                        f'When something is less than 1m away either reverse or rotate because you'
-                        f'will hit it if you move forward.',
+            system_prompt='You are driving a robot car. Based on the most recent image and your logs from'
+                          'past actions, your goal is to find the {target}. Make sure NOT to move forward'
+                          'if there is a wall or object close in front of you - rotate or go in reverse.',
             result_type=ResponseType,
             result_tool_description='First argument is a basic image description that you need to generate. Second arg is the movement command. Forward'
                                   'and reverse move about 1m. Rotating does about 45 deg. The third'
@@ -137,7 +132,8 @@ class AgentServer:
         result = await self.agent.run([
             ChatCompletionContentPartTextParam(
                 type='text',
-                text=f'Distance to surface: {sensor_dist/100:.2f} m {"(Rotate!)" if sensor_dist < 100 else ""}\nLogs: {self.logs}'
+                # text=f'Distance to surface: {sensor_dist/100:.2f} m {"(Rotate!)" if sensor_dist < 100 else ""}\nLogs: {self.logs}'
+                text=f'Logs: {self.logs}'
             ),
             *self.images
         ])

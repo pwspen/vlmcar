@@ -102,6 +102,7 @@ const App = () => {
           <div key={key} className="p-4 bg-gray-50 rounded-lg">
             <div className="font-medium">{key}:</div>
             <div>{value?.toString() || "No data"}</div>
+            <br />
           </div>
         ))}
       </div>
