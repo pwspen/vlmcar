@@ -13,6 +13,7 @@ import shutil
 from typing import List, Literal
 import asyncio
 import json
+import requests
 
 from api import LocalRobot
 
@@ -75,10 +76,12 @@ class AgentContainer:
 
     async def run_agent(self, agent, b64image: str, sensor_dist: float):
         print(f'Running agent, dist= {sensor_dist}')
+        image_str = f"data:image/jpeg;base64,{b64image}"
+        await self.post_image(image_str)
         self.images.append(
             ChatCompletionContentPartImageParam(
                 type='image_url',
-                image_url={'url': f"data:image/jpeg;base64,{b64image}", 'detail': 'low'}
+                image_url={'url': image_str, 'detail': 'low'}
             )
         )
         if len(self.images) > self.num_images:
@@ -97,6 +100,10 @@ class AgentContainer:
             self.logs.pop(0)
 
         return result.data
+
+    async def post_image(b64image: str, url: str = "http://192.168.137.1:3001/image"):
+        response = requests.post(url, json={"image": b64image})
+        return response.status_code == 200
 
     async def loop(self):
         result: ResponseType = await self.run_agent(agent, 
