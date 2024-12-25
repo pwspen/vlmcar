@@ -95,7 +95,7 @@ class AgentContainer:
         return result
 
     async def loop(self):
-        result = await self.run_agent(agent, 
+        result: ResponseType = await self.run_agent(agent, 
                                        b64image=self.robot.get_current_frame(),
                                        sensor_dist=self.robot.get_distance())
         if result.command == 'forward':
