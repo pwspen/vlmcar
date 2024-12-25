@@ -57,7 +57,7 @@ agent = Agent(model,
                             f'You move by sending api commands as described in the tool description.'
                             f'Make sure to avoid obstacles! DO NOT move forward if something is very close'
                             f'in front of you. If you get too close to something, either back up or'
-                            f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.'
+                            f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.',
               result_type=ResponseType,
               result_tool_description='First argument is the movement command. Foward'
                                       'and reverse move about 1m. Rotating does about 45 deg. The second'
