@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
+interface WebSocketData {
+  image: string;
+  dist?: number;
+  notes?: string;
+  action?: string;
+}
+
 const App = () => {
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
   const [currentImage, setCurrentImage] = useState("");
+  const [distance, setDistance] = useState<number | undefined>();
+  const [notes, setNotes] = useState<string>("");
+  const [action, setAction] = useState<string>("");
   const [ws, setWs] = useState<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const lastReconnectTime = useRef(0);
@@ -49,9 +59,18 @@ const App = () => {
 
     websocket.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const data: WebSocketData = JSON.parse(event.data);
         if (data.image) {
           setCurrentImage(data.image);
+        }
+        if (data.dist !== undefined) {
+          setDistance(data.dist);
+        }
+        if (data.notes) {
+          setNotes(data.notes);
+        }
+        if (data.action) {
+          setAction(data.action);
         }
       } catch (error) {
         console.error("Error parsing message:", error);
@@ -59,7 +78,6 @@ const App = () => {
     };
 
     setWs(websocket);
-
     return () => {
       websocket.close();
     };
@@ -67,7 +85,6 @@ const App = () => {
 
   useEffect(() => {
     const cleanup = connectWebSocket();
-
     return () => {
       if (ws) {
         ws.close();
@@ -77,9 +94,37 @@ const App = () => {
   }, [connectWebSocket, ws]);
 
   return (
-    <div>
-      <div>WebSocket Status: {connectionStatus}</div>
-      {currentImage && <img src={currentImage} alt="Robot camera feed" />}
+    <div className="p-4 max-w-4xl mx-auto">
+      <div className="mb-4 text-lg font-semibold">
+        WebSocket Status: {connectionStatus}
+      </div>
+
+      {currentImage && (
+        <div className="mb-6">
+          <img
+            src={currentImage}
+            alt="Robot camera feed"
+            className="w-full h-96 object-cover rounded-lg shadow-lg"
+          />
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 mt-4">
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="font-medium">Distance:</div>
+          <div>{distance !== undefined ? `${distance} units` : "No data"}</div>
+        </div>
+
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="font-medium">Notes:</div>
+          <div>{notes || "No notes"}</div>
+        </div>
+
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="font-medium">Action:</div>
+          <div>{action || "No action"}</div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -54,7 +54,13 @@ class AgentServer:
         self.logs = ['<START>']
         self.connected_clients = set()
         self.running = False
-        
+        self.image_str = ''
+
+        self.prev_img = ''
+        self.prev_note = ''
+        self.prev_dist = 0
+        self.prev_action = ''
+
         # Initialize the model and agent
         self.model = OpenAIModel(
             model_name=Models.gemini,
@@ -110,16 +116,17 @@ class AgentServer:
     async def run_agent(self, b64image: str, sensor_dist: float):
         """Run the agent with current image and sensor data"""
         print(f'Running agent, dist= {sensor_dist / 100:.0f} m')
-        image_str = f"data:image/jpeg;base64,{b64image}"
+        self.image_str = f"data:image/jpeg;base64,{b64image}"
         
         # Only broadcast if there are connected clients
-        if self.connected_clients:
-            await self.broadcast_to_clients({"image": image_str})
+        # if self.connected_clients:
+        #     await self.broadcast_to_clients({"image": image_str,
+        #                                      "dist":})
         
         self.images.append(
             ChatCompletionContentPartImageParam(
                 type='image_url',
-                image_url={'url': image_str, 'detail': 'low'}
+                image_url={'url': self.image_str, 'detail': 'low'}
             )
         )
         if len(self.images) > self.num_images:
@@ -144,9 +151,10 @@ class AgentServer:
         """Main agent loop that runs independently of websocket connections"""
         self.running = True
         while self.running:
+            dist = self.robot.get_distance()
             result: ResponseType = await self.run_agent(
                 b64image=self.robot.get_current_frame(),
-                sensor_dist=self.robot.get_distance()
+                sensor_dist=dist
             )
             
             # Execute the command
@@ -160,10 +168,11 @@ class AgentServer:
                 await self.robot.rotate_left()
             else:
                 print('Unknown command:', result.command)
-                
+            
             # Broadcast result to any connected clients
             await self.broadcast_to_clients({
-                "status": "success",
+                "image": self.image_str,
+                "dist": dist,
                 "command": result.command,
                 "notes": result.notes
             })
