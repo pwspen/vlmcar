@@ -75,13 +75,14 @@ class AgentServer:
         self.agent = Agent(
             self.model,
             system_prompt=f'You are driving a robot car. Based on the most recent image and your logs from'
-                          f'past actions, your goal is to find the {target}. Make sure NOT to move forward'
+                          f'past actions, your goal is to find the {target} and drive into it (you won\'t hurt it).'
                         #   f'if there is a wall or object close in front of you - rotate or go in reverse.'
                         #   f'After entering a new area, rotate around to look at it then try to explore it.'
                           f'If the image is very unclear and you can\'t make anything out, it probably means'
                           f'that you\'re very close to something and should reverse or rotate.'
                           f'Make sure to move instead of just rotating - if you\'ve rotated 2 or 3 times in a'
-                          f'row you should probably pick a direction to move.',
+                          f'row you should probably pick a direction to move. Don\'t try to make fine adjustments to rotation,'
+                          f'if you see somewhere you want to go kinda near the center of the image, then move forward.',
             result_type=ResponseType,
             result_tool_description='To respond, the first argument is a basic image description that you generate. Should be 5-10 words.'
                                     'The second argument is your explanation for why you are taking a certain action. Avoid obstacles at all costs.'
