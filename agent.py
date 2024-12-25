@@ -77,7 +77,9 @@ class AgentServer:
             system_prompt=f'You are driving a robot car. Based on the most recent image and your logs from'
                           f'past actions, your goal is to find the {target}. Make sure NOT to move forward'
                           f'if there is a wall or object close in front of you - rotate or go in reverse.'
-                          f'After entering a new area, rotate around to look at it then try to explore it.',
+                        #   f'After entering a new area, rotate around to look at it then try to explore it.'
+                          f'If the image is very unclear and you can\'t make anything out, it probably means'
+                          f'that you\'re very close to something and should reverse or rotate.',
             result_type=ResponseType,
             result_tool_description='To respond, the first argument is a basic image description that you generate. Should be 5-10 words.'
                                     'The second argument is your explanation for why you are taking a certain action. Avoid obstacles at all costs.'
