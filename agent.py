@@ -135,18 +135,18 @@ class AgentServer:
             
         print('Running agent...')
         result = await self.agent.run([
-            ChatCompletionContentPartTextParam(
-                type='text',
-                # text=f'Distance to surface: {sensor_dist/100:.2f} m {"(Rotate!)" if sensor_dist < 100 else ""}\nLogs: {self.logs}'
-                text=f'Logs: {self.logs}'
-            ),
+            # ChatCompletionContentPartTextParam(
+            #     type='text',
+            #   # text=f'Distance to surface: {sensor_dist/100:.2f} m {"(Rotate!)" if sensor_dist < 100 else ""}\nLogs: {self.logs}'
+            #     text=f'Logs: {self.logs}'
+            # ),
             *self.images
         ])
         self.logs.append(result.data)
         print(result.data)
         if len(self.logs) > self.num_logs:
             self.logs.pop(0)
-            print(f'Snipped log, new log: {self.logs}')
+            # print(f'Snipped log, new log: {self.logs}')
 
         return result.data
 
