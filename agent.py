@@ -52,7 +52,7 @@ class AgentServer:
         self.port = port
         self.robot = LocalRobot()
         self.num_images = 1
-        self.num_logs = 5
+        self.num_logs = 8
         self.images = []
         self.logs = ['<START>']
         self.connected_clients = set()
@@ -79,7 +79,9 @@ class AgentServer:
                         #   f'if there is a wall or object close in front of you - rotate or go in reverse.'
                         #   f'After entering a new area, rotate around to look at it then try to explore it.'
                           f'If the image is very unclear and you can\'t make anything out, it probably means'
-                          f'that you\'re very close to something and should reverse or rotate.',
+                          f'that you\'re very close to something and should reverse or rotate.'
+                          f'Make sure to move instead of just rotating - if you\'ve rotated 2 or 3 times in a'
+                          f'row you should probably pick a direction to move.',
             result_type=ResponseType,
             result_tool_description='To respond, the first argument is a basic image description that you generate. Should be 5-10 words.'
                                     'The second argument is your explanation for why you are taking a certain action. Avoid obstacles at all costs.'
