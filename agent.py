@@ -62,37 +62,55 @@ agent = Agent(model,
                                       'where you want to get to and how this movement helps that, etc.'
                                       'Example call: {"command": "forward", "notes": "Moving towards doorway"}')
 
-num_images = 3
-num_logs = 3
-images = []
-logs = ['<START>']
-async def run_agent(agent, b64image: str, sensor_dist: float):
-    images.append(
-        ChatCompletionContentPartImageParam(
-            type='image_url',
-            image_url={'url': f"data:image/jpeg;base64,{b64image}", 'detail': 'low'}
-        )
-    )
-    if len(images) > num_images:
-        images.pop(0)
-    print('Sending server request..')
-    result = await agent.run([
-        ChatCompletionContentPartTextParam(
-            type='text',
-            text=f'Distance from sensor: {sensor_dist}\nLogs: {logs}'
-        ),
-        *images
-    ])
-    logs.append(result.data)
-    print(result.data)
-    if len(logs) > num_logs:
-        logs.pop(0)
+class AgentContainer:
+    def __init__(self):
+        self.robot = LocalRobot()
+        self.num_images = 3
+        self.num_logs = 3
+        self.images = []
+        self.logs = ['<START>']
 
+    async def run_agent(self, agent, b64image: str, sensor_dist: float):
+        self.images.append(
+            ChatCompletionContentPartImageParam(
+                type='image_url',
+                image_url={'url': f"data:image/jpeg;base64,{b64image}", 'detail': 'low'}
+            )
+        )
+        if len(self.images) > self.num_images:
+            self.images.pop(0)
+        print('Sending server request..')
+        result = await agent.run([
+            ChatCompletionContentPartTextParam(
+                type='text',
+                text=f'Distance from sensor: {sensor_dist}\nLogs: {self.logs}'
+            ),
+            *self.images
+        ])
+        self.logs.append(result.data)
+        print(result.data)
+        if len(self.logs) > self.num_logs:
+            self.logs.pop(0)
+
+        return result
+
+    async def loop(self):
+        result = await self.run_agent(agent, 
+                                       b64image=self.robot.get_current_frame(),
+                                       sensor_dist=self.robot.get_distance())
+        if result.command == 'forward':
+            await self.robot.forward()
+        elif result.command == 'reverse':
+            await self.robot.reverse()
+        elif result.command == 'rot_right':
+            await self.robot.rotate_right()
+        elif result.command == 'rot_left':
+            await self.robot.rotate_left()
+        else:
+            print('Unknown command:', result.command)
+        asyncio.sleep(1) # Wait a bit for image/sensor to stabilize
 
 if __name__ == '__main__':
-    robot = LocalRobot()
+    container = AgentContainer()
     while True:
-        asyncio.run(run_agent(agent, 
-                              b64image=robot.get_current_frame(),
-                              sensor_dist=robot.get_distance()
-                              ))
+        asyncio.run(container.loop())
