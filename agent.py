@@ -38,7 +38,7 @@ class Models:
     novalite = 'amazon/nova-lite-v1'
     novapro = 'amazon/nova-pro-v1'
     qwenvl = 'qwen/qwen-2-vl-72b-instruct'
-    gemini = 'google/gemini-2.0-flash-exp:free'
+    gemini = 'google/gemini-flash-1.5'
 
 class ResponseType(BaseModel):
     command: Literal["forward", "reverse", "rot_right", "rot_left"]
