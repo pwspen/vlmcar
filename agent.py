@@ -109,7 +109,7 @@ class AgentServer:
 
     async def run_agent(self, b64image: str, sensor_dist: float):
         """Run the agent with current image and sensor data"""
-        print(f'Running agent, dist= {sensor_dist} cm')
+        print(f'Running agent, dist= {sensor_dist / 100:.0f} m')
         image_str = f"data:image/jpeg;base64,{b64image}"
         
         # Only broadcast if there are connected clients
@@ -129,7 +129,7 @@ class AgentServer:
         result = await self.agent.run([
             ChatCompletionContentPartTextParam(
                 type='text',
-                text=f'Distance to surface: {sensor_dist}\nLogs: {self.logs}'
+                text=f'Distance to surface: {sensor_dist/100:.2f} m {"(Don't move forward!)" if sensor_dist < 100 else ""}\nLogs: {self.logs}'
             ),
             *self.images
         ])
