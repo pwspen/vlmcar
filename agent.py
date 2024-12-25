@@ -72,6 +72,7 @@ async def run_agent(agent, b64image: str, sensor_dist: float):
     )
     if len(images) > num_images:
         images.pop(0)
+    print('Sending server request..')
     result = await agent.run([
         ChatCompletionContentPartTextParam(
             type='text',

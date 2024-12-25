@@ -47,8 +47,8 @@ class StreamingOutput(io.BufferedIOBase):
                 self.frame = buf
                 self.condition.notify_all()
                 
-            if self.write_count % 100 == 0:
-                logger.debug(f"Frames written: {self.write_count}")
+            # if self.write_count % 100 == 0:
+            #     logger.debug(f"Frames written: {self.write_count}")
                 
         except Exception as e:
             logger.error(f"Error in StreamingOutput.write: {e}")
