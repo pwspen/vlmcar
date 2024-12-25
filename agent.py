@@ -40,10 +40,24 @@ class Models:
     gemini = 'google/gemini-flash-1.5'
     claude = 'anthropic/claude-3.5-sonnet'
 
+class CommandType(BaseModel):
+    type: Literal["move", "rotate"]
+    magnitude: float
+
+    @field_validator('magnitude')
+    def validate_magnitude(cls, value, values):
+        command_type = values.data.get('type')
+        if command_type == 'move':
+            if not (0 <= value <= 1):
+                raise ValueError('Move magnitude must be between 0 and 1')
+        elif command_type == 'rotate':
+            if not (-180 <= value <= 180):
+                raise ValueError('Rotation magnitude must be between -180 and 180 degrees')
+
 class ResponseType(BaseModel):
     image_desc: str
     explanation: str
-    command: Literal["forward", "reverse", "rot_right", "rot_left"]
+    command: CommandType
 
 
 class AgentServer:
@@ -86,7 +100,8 @@ class AgentServer:
             result_type=ResponseType,
             result_tool_description='To respond, the first argument is a basic image description that you generate. Should be 5-10 words.'
                                     'The second argument is your explanation for why you are taking a certain action. Avoid obstacles at all costs.'
-                                    'The third argument is the action you want the robot to take: forward, reverse, rot_right, or rot_left.',
+                                    'The third argument is the action you want the robot to take: "move" or "rotate", and a magnitude.'
+                                    'Magnitude is in meters for movement and in degrees for rotation. Never move (in either direction) more than 1m or 180 deg.',
         )
 
     async def handle_client(self, websocket):
@@ -161,14 +176,10 @@ class AgentServer:
             )
             
             # Execute the command
-            if result.command == 'forward':
-                await self.robot.forward()
-            elif result.command == 'reverse':
-                await self.robot.reverse()
-            elif result.command == 'rot_right':
-                await self.robot.rotate_right()
-            elif result.command == 'rot_left':
-                await self.robot.rotate_left()
+            if result.command.type == 'move':
+                self.robot.move_dist(dist=result.command.magnitude)
+            elif result.command.type == 'rotate':
+                self.robot.rotate_deg(degrees=result.command.magnitude)
             else:
                 print('Unknown command:', result.command)
             
