@@ -71,7 +71,9 @@ class AgentServer:
                         f'You move by sending api commands as described in the tool description.'
                         f'Make sure to avoid obstacles! DO NOT move forward if something is very close'
                         f'in front of you. If you get too close to something, either back up or'
-                        f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.',
+                        f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.'
+                        f'When something is less than 1m away either reverse or rotate because you'
+                        f'will hit it if you move forward.',
             result_type=ResponseType,
             result_tool_description='First argument is the movement command. Forward'
                                   'and reverse move about 1m. Rotating does about 45 deg. The second'
@@ -107,7 +109,7 @@ class AgentServer:
 
     async def run_agent(self, b64image: str, sensor_dist: float):
         """Run the agent with current image and sensor data"""
-        print(f'Running agent, dist= {sensor_dist}')
+        print(f'Running agent, dist= {sensor_dist} cm')
         image_str = f"data:image/jpeg;base64,{b64image}"
         
         # Only broadcast if there are connected clients
