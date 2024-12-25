@@ -71,12 +71,12 @@ class AgentServer:
             api_key=api_key
         )
         
-        target = 'parrot statue'
+        target = 'microscope'
         self.agent = Agent(
             self.model,
             system_prompt=f'You are driving a robot car. Based on the most recent image and your logs from'
                           f'past actions, your goal is to find the {target}. Make sure NOT to move forward'
-                          f'if there is a wall or object close in front of you - rotate or go in reverse.'
+                        #   f'if there is a wall or object close in front of you - rotate or go in reverse.'
                         #   f'After entering a new area, rotate around to look at it then try to explore it.'
                           f'If the image is very unclear and you can\'t make anything out, it probably means'
                           f'that you\'re very close to something and should reverse or rotate.',
