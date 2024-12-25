@@ -101,7 +101,7 @@ class AgentContainer:
 
         return result.data
 
-    async def post_image(b64image: str, url: str = "http://192.168.137.1:3001/image"):
+    async def post_image(self, b64image: str, url: str = "http://192.168.137.1:3001/image"):
         response = requests.post(url, json={"image": b64image})
         return response.status_code == 200
 
