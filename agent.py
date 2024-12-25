@@ -53,6 +53,7 @@ class AgentServer:
         self.images = []
         self.logs = ['<START>']
         self.connected_clients = set()
+        self.running = False
         
         # Initialize the model and agent
         self.model = OpenAIModel(
@@ -85,20 +86,21 @@ class AgentServer:
         self.connected_clients.add(websocket)
         try:
             while True:
-                # Run the agent loop continuously for each connected client
-                await self.agent_loop(websocket)
+                await asyncio.sleep(0.1)  # Prevent busy waiting
         except websockets.exceptions.ConnectionClosed:
             print(f"Client disconnected from {websocket.remote_address}")
         finally:
             self.connected_clients.remove(websocket)
 
-    async def broadcast_image(self, image_data: str):
-        """Broadcast the current image to all connected clients"""
-        message = json.dumps({"image": image_data})
+    async def broadcast_to_clients(self, message):
+        """Broadcast message to all connected clients if any exist"""
+        if not self.connected_clients:
+            return
+            
         websockets_tasks = []
         for websocket in self.connected_clients:
             websockets_tasks.append(asyncio.create_task(
-                websocket.send(message)
+                websocket.send(json.dumps(message))
             ))
         if websockets_tasks:
             await asyncio.gather(*websockets_tasks)
@@ -107,7 +109,10 @@ class AgentServer:
         """Run the agent with current image and sensor data"""
         print(f'Running agent, dist= {sensor_dist}')
         image_str = f"data:image/jpeg;base64,{b64image}"
-        await self.broadcast_image(image_str)
+        
+        # Only broadcast if there are connected clients
+        if self.connected_clients:
+            await self.broadcast_to_clients({"image": image_str})
         
         self.images.append(
             ChatCompletionContentPartImageParam(
@@ -133,39 +138,54 @@ class AgentServer:
 
         return result.data
 
-    async def agent_loop(self, websocket):
-        """Main agent loop for processing and movement"""
-        result: ResponseType = await self.run_agent(
-            b64image=self.robot.get_current_frame(),
-            sensor_dist=self.robot.get_distance()
-        )
-        
-        # Execute the command
-        if result.command == 'forward':
-            await self.robot.forward()
-        elif result.command == 'reverse':
-            await self.robot.reverse()
-        elif result.command == 'rot_right':
-            await self.robot.rotate_right()
-        elif result.command == 'rot_left':
-            await self.robot.rotate_left()
-        else:
-            print('Unknown command:', result.command)
+    async def main_loop(self):
+        """Main agent loop that runs independently of websocket connections"""
+        self.running = True
+        while self.running:
+            result: ResponseType = await self.run_agent(
+                b64image=self.robot.get_current_frame(),
+                sensor_dist=self.robot.get_distance()
+            )
             
-        # Send the command result back to the client
-        await websocket.send(json.dumps({
-            "status": "success",
-            "command": result.command,
-            "notes": result.notes
-        }))
-        
-        await asyncio.sleep(1)  # Wait for image/sensor to stabilize
+            # Execute the command
+            if result.command == 'forward':
+                await self.robot.forward()
+            elif result.command == 'reverse':
+                await self.robot.reverse()
+            elif result.command == 'rot_right':
+                await self.robot.rotate_right()
+            elif result.command == 'rot_left':
+                await self.robot.rotate_left()
+            else:
+                print('Unknown command:', result.command)
+                
+            # Broadcast result to any connected clients
+            await self.broadcast_to_clients({
+                "status": "success",
+                "command": result.command,
+                "notes": result.notes
+            })
+            
+            await asyncio.sleep(1)  # Wait for image/sensor to stabilize
 
     async def start(self):
-        """Start the WebSocket server"""
-        async with websockets.serve(self.handle_client, self.host, self.port):
-            print(f"WebSocket server started on ws://{self.host}:{self.port}")
-            await asyncio.Future()  # run forever
+        """Start both the websocket server and main agent loop"""
+        main_loop = asyncio.create_task(self.main_loop())
+        
+        # Start websocket server
+        websocket_server = await websockets.serve(self.handle_client, self.host, self.port)
+        print(f"WebSocket server started on ws://{self.host}:{self.port}")
+        
+        try:
+            # Run both the main loop and websocket server concurrently
+            await asyncio.gather(
+                main_loop,
+                asyncio.Future()  # Keep the websocket server running
+            )
+        finally:
+            self.running = False
+            websocket_server.close()
+            await websocket_server.wait_closed()
 
 async def main():
     server = AgentServer()
