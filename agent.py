@@ -82,7 +82,7 @@ class AgentServer:
                                   'Example call: {"command": "forward", "notes": "Moving towards doorway"}'
         )
 
-    async def handle_client(self, websocket, path):
+    async def handle_client(self, websocket):
         """Handle individual client connections"""
         print(f"Client connected from {websocket.remote_address}")
         self.connected_clients.add(websocket)
