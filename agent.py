@@ -72,7 +72,7 @@ class AgentContainer:
         self.logs = ['<START>']
 
     async def run_agent(self, agent, b64image: str, sensor_dist: float):
-        self.print(f'Running agent, dist= {sensor_dist}')
+        print(f'Running agent, dist= {sensor_dist}')
         self.images.append(
             ChatCompletionContentPartImageParam(
                 type='image_url',
