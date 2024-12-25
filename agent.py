@@ -92,7 +92,7 @@ class AgentContainer:
         if len(self.logs) > self.num_logs:
             self.logs.pop(0)
 
-        return result
+        return result.data
 
     async def loop(self):
         result: ResponseType = await self.run_agent(agent, 
