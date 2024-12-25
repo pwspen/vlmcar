@@ -67,7 +67,7 @@ class AgentContainer:
     def __init__(self):
         self.robot = LocalRobot()
         self.num_images = 1
-        self.num_logs = 1
+        self.num_logs = 5
         self.images = []
         self.logs = ['<START>']
 
