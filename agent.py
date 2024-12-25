@@ -129,7 +129,7 @@ class AgentServer:
         result = await self.agent.run([
             ChatCompletionContentPartTextParam(
                 type='text',
-                text=f'Distance to surface: {sensor_dist/100:.2f} m {"(Do not move forward!)" if sensor_dist < 100 else ""}\nLogs: {self.logs}'
+                text=f'Distance to surface: {sensor_dist/100:.2f} m {"(Rotate!)" if sensor_dist < 100 else ""}\nLogs: {self.logs}'
             ),
             *self.images
         ])
