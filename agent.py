@@ -37,6 +37,8 @@ with open(api_key_fname) as f:
         api_key = json.load(f)["OPENROUTER_API_KEY"]
         if "paste" in api_key: # still set to paste_key_here
             raise KeyError
+        else:
+            print('API key loaded successfully')
     except KeyError:
         print('Please paste your API key into api_key.json. You should have "OPENROUTER_API_KEY": "<KEY>"')
         exit(1)
