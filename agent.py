@@ -54,7 +54,8 @@ agent = Agent(model,
               system_prompt=f'You are driving a robot car. Based on the most recent image, your distance'
                             f'sensor (the distance to the nearest object in front of you), and your'
                             f'logs from past movement cycles, move around the room to find the {target}.'
-                            f'You move by sending api commands as described in the tool description.',
+                            f'You move by sending api commands as described in the tool description.'
+                            f'Make sure to avoid obstacles - when something is close in front, rotate.',
               result_type=ResponseType,
               result_tool_description='First argument is the movement command. Foward'
                                       'and reverse move about 1m. Rotating does about 45 deg. The second'
@@ -65,12 +66,13 @@ agent = Agent(model,
 class AgentContainer:
     def __init__(self):
         self.robot = LocalRobot()
-        self.num_images = 3
-        self.num_logs = 3
+        self.num_images = 1
+        self.num_logs = 1
         self.images = []
         self.logs = ['<START>']
 
     async def run_agent(self, agent, b64image: str, sensor_dist: float):
+        self.print(f'Running agent, dist= {sensor_dist}')
         self.images.append(
             ChatCompletionContentPartImageParam(
                 type='image_url',
