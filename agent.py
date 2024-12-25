@@ -40,6 +40,7 @@ class Models:
     gemini = 'google/gemini-flash-1.5'
 
 class ResponseType(BaseModel):
+    image_desc: str
     command: Literal["forward", "reverse", "rot_right", "rot_left"]
     notes: str
 
@@ -81,7 +82,7 @@ class AgentServer:
                         f'When something is less than 1m away either reverse or rotate because you'
                         f'will hit it if you move forward.',
             result_type=ResponseType,
-            result_tool_description='First argument is the movement command. Forward'
+            result_tool_description='First argument is a basic image description. Second arg is the movement command. Forward'
                                   'and reverse move about 1m. Rotating does about 45 deg. The second'
                                   'argument is a short sentence describing your goal in moving -'
                                   'where you want to get to and how this movement helps that, etc.'
@@ -173,8 +174,9 @@ class AgentServer:
             await self.broadcast_to_clients({
                 "image": self.image_str,
                 "dist": dist,
+                "desc": result.image_desc,
                 "action": result.command,
-                "notes": result.notes
+                "notes": result.notes,
             })
             
             await asyncio.sleep(1)  # Wait for image/sensor to stabilize

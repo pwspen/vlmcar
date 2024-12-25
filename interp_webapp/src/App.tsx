@@ -1,24 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
 interface WebSocketData {
-  image: string;
-  dist?: number;
-  notes?: string;
-  action?: string;
+  image?: string;
+  [key: string]: any;
 }
 
 const App = () => {
   const [connectionStatus, setConnectionStatus] = useState("Disconnected");
   const [currentImage, setCurrentImage] = useState("");
-  const [distance, setDistance] = useState<number | undefined>();
-  const [notes, setNotes] = useState<string>("");
-  const [action, setAction] = useState<string>("");
+  const [data, setData] = useState<Record<string, any>>({});
   const [ws, setWs] = useState<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const lastReconnectTime = useRef(0);
 
   const connectWebSocket = useCallback(() => {
-    // Check if we've tried to reconnect recently (within last 500ms)
     const now = Date.now();
     if (now - lastReconnectTime.current < 500) {
       return () => {};
@@ -27,7 +22,6 @@ const App = () => {
     lastReconnectTime.current = now;
     reconnectAttempts.current += 1;
 
-    // Only try to reconnect 3 times
     if (reconnectAttempts.current > 3) {
       setConnectionStatus("Failed to connect after 3 attempts");
       return () => {};
@@ -44,7 +38,6 @@ const App = () => {
       setConnectionStatus(
         `Disconnected (Attempt ${reconnectAttempts.current}/3)`
       );
-      // Try to reconnect after 500ms, but only if we haven't exceeded attempts
       if (reconnectAttempts.current < 3) {
         setTimeout(connectWebSocket, 500);
       }
@@ -59,19 +52,14 @@ const App = () => {
 
     websocket.onmessage = (event) => {
       try {
-        const data: WebSocketData = JSON.parse(event.data);
-        if (data.image) {
-          setCurrentImage(data.image);
+        const receivedData: WebSocketData = JSON.parse(event.data);
+        const { image, ...otherData } = receivedData;
+
+        if (image) {
+          setCurrentImage(image);
         }
-        if (data.dist !== undefined) {
-          setDistance(data.dist);
-        }
-        if (data.notes) {
-          setNotes(data.notes);
-        }
-        if (data.action) {
-          setAction(data.action);
-        }
+
+        setData(otherData);
       } catch (error) {
         console.error("Error parsing message:", error);
       }
@@ -110,20 +98,12 @@ const App = () => {
       )}
 
       <div className="grid grid-cols-1 gap-4 mt-4">
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <div className="font-medium">Distance:</div>
-          <div>{distance !== undefined ? `${distance} units` : "No data"}</div>
-        </div>
-
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <div className="font-medium">Notes:</div>
-          <div>{notes || "No notes"}</div>
-        </div>
-
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <div className="font-medium">Action:</div>
-          <div>{action || "No action"}</div>
-        </div>
+        {Object.entries(data).map(([key, value]) => (
+          <div key={key} className="p-4 bg-gray-50 rounded-lg">
+            <div className="font-medium">{key}:</div>
+            <div>{value?.toString() || "No data"}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
