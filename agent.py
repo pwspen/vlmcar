@@ -108,7 +108,7 @@ class AgentContainer:
             await self.robot.rotate_left()
         else:
             print('Unknown command:', result.command)
-        asyncio.sleep(1) # Wait a bit for image/sensor to stabilize
+        await asyncio.sleep(1) # Wait a bit for image/sensor to stabilize
 
 if __name__ == '__main__':
     container = AgentContainer()
