@@ -5,18 +5,16 @@ from openai.types.chat.chat_completion_content_part_param import (
     ChatCompletionContentPartTextParam,
     ChatCompletionContentPartImageParam
 )
-from openai.types.chat.chat_completion_content_part_image_param import (
-    ImageURL
-)
 import os
 import shutil
 from typing import List, Literal
 import asyncio
 import json
-import requests
+import websockets
 
 from api import LocalRobot
 
+# API key loading code remains the same
 api_key_fname = 'api_key.json'
 if not os.path.exists(api_key_fname):
     shutil.copy(api_key_fname + '.template', api_key_fname)
@@ -26,7 +24,7 @@ if not os.path.exists(api_key_fname):
 with open(api_key_fname) as f:
     try:
         api_key = json.load(f)["OPENROUTER_API_KEY"]
-        if "paste" in api_key: # still set to paste_key_here
+        if "paste" in api_key:  # still set to paste_key_here
             raise KeyError
         else:
             print('API key loaded successfully')
@@ -45,39 +43,72 @@ class ResponseType(BaseModel):
     command: Literal["forward", "reverse", "rot_right", "rot_left"]
     notes: str
 
-model = OpenAIModel(
-    model_name=Models.gemini,
-    base_url='https://openrouter.ai/api/v1',
-    api_key=api_key
-)
-target = 'parrot statue'
-agent = Agent(model,
-              system_prompt=f'You are driving a robot car. Based on the most recent image, your distance'
-                            f'sensor (the distance to the nearest object in front of you), and your'
-                            f'logs from past movement cycles, move around the room to find the {target}.'
-                            f'You move by sending api commands as described in the tool description.'
-                            f'Make sure to avoid obstacles! DO NOT move forward if something is very close'
-                            f'in front of you. If you get too close to something, either back up or'
-                            f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.',
-              result_type=ResponseType,
-              result_tool_description='First argument is the movement command. Foward'
-                                      'and reverse move about 1m. Rotating does about 45 deg. The second'
-                                      'argument is a short sentence describing your goal in moving -'
-                                      'where you want to get to and how this movement helps that, etc.'
-                                      'Example call: {"command": "forward", "notes": "Moving towards doorway"}')
-
-class AgentContainer:
-    def __init__(self):
+class AgentServer:
+    def __init__(self, host='localhost', port=3001):
+        self.host = host
+        self.port = port
         self.robot = LocalRobot()
         self.num_images = 1
         self.num_logs = 5
         self.images = []
         self.logs = ['<START>']
+        self.connected_clients = set()
+        
+        # Initialize the model and agent
+        self.model = OpenAIModel(
+            model_name=Models.gemini,
+            base_url='https://openrouter.ai/api/v1',
+            api_key=api_key
+        )
+        
+        target = 'parrot statue'
+        self.agent = Agent(
+            self.model,
+            system_prompt=f'You are driving a robot car. Based on the most recent image, your distance'
+                        f'sensor (the distance to the nearest object in front of you), and your'
+                        f'logs from past movement cycles, move around the room to find the {target}.'
+                        f'You move by sending api commands as described in the tool description.'
+                        f'Make sure to avoid obstacles! DO NOT move forward if something is very close'
+                        f'in front of you. If you get too close to something, either back up or'
+                        f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.',
+            result_type=ResponseType,
+            result_tool_description='First argument is the movement command. Forward'
+                                  'and reverse move about 1m. Rotating does about 45 deg. The second'
+                                  'argument is a short sentence describing your goal in moving -'
+                                  'where you want to get to and how this movement helps that, etc.'
+                                  'Example call: {"command": "forward", "notes": "Moving towards doorway"}'
+        )
 
-    async def run_agent(self, agent, b64image: str, sensor_dist: float):
+    async def handle_client(self, websocket, path):
+        """Handle individual client connections"""
+        print(f"Client connected from {websocket.remote_address}")
+        self.connected_clients.add(websocket)
+        try:
+            while True:
+                # Run the agent loop continuously for each connected client
+                await self.agent_loop(websocket)
+        except websockets.exceptions.ConnectionClosed:
+            print(f"Client disconnected from {websocket.remote_address}")
+        finally:
+            self.connected_clients.remove(websocket)
+
+    async def broadcast_image(self, image_data: str):
+        """Broadcast the current image to all connected clients"""
+        message = json.dumps({"image": image_data})
+        websockets_tasks = []
+        for websocket in self.connected_clients:
+            websockets_tasks.append(asyncio.create_task(
+                websocket.send(message)
+            ))
+        if websockets_tasks:
+            await asyncio.gather(*websockets_tasks)
+
+    async def run_agent(self, b64image: str, sensor_dist: float):
+        """Run the agent with current image and sensor data"""
         print(f'Running agent, dist= {sensor_dist}')
         image_str = f"data:image/jpeg;base64,{b64image}"
-        await self.post_image(image_str)
+        await self.broadcast_image(image_str)
+        
         self.images.append(
             ChatCompletionContentPartImageParam(
                 type='image_url',
@@ -86,8 +117,9 @@ class AgentContainer:
         )
         if len(self.images) > self.num_images:
             self.images.pop(0)
-        print('Sending server request..')
-        result = await agent.run([
+            
+        print('Running agent...')
+        result = await self.agent.run([
             ChatCompletionContentPartTextParam(
                 type='text',
                 text=f'Distance to surface: {sensor_dist}\nLogs: {self.logs}'
@@ -101,14 +133,14 @@ class AgentContainer:
 
         return result.data
 
-    async def post_image(self, b64image: str, url: str = "http://192.168.137.1:3001/image"):
-        response = requests.post(url, json={"image": b64image})
-        return response.status_code == 200
-
-    async def loop(self):
-        result: ResponseType = await self.run_agent(agent, 
-                                       b64image=self.robot.get_current_frame(),
-                                       sensor_dist=self.robot.get_distance())
+    async def agent_loop(self, websocket):
+        """Main agent loop for processing and movement"""
+        result: ResponseType = await self.run_agent(
+            b64image=self.robot.get_current_frame(),
+            sensor_dist=self.robot.get_distance()
+        )
+        
+        # Execute the command
         if result.command == 'forward':
             await self.robot.forward()
         elif result.command == 'reverse':
@@ -119,9 +151,25 @@ class AgentContainer:
             await self.robot.rotate_left()
         else:
             print('Unknown command:', result.command)
-        await asyncio.sleep(1) # Wait a bit for image/sensor to stabilize
+            
+        # Send the command result back to the client
+        await websocket.send(json.dumps({
+            "status": "success",
+            "command": result.command,
+            "notes": result.notes
+        }))
+        
+        await asyncio.sleep(1)  # Wait for image/sensor to stabilize
+
+    async def start(self):
+        """Start the WebSocket server"""
+        async with websockets.serve(self.handle_client, self.host, self.port):
+            print(f"WebSocket server started on ws://{self.host}:{self.port}")
+            await asyncio.Future()  # run forever
+
+async def main():
+    server = AgentServer()
+    await server.start()
 
 if __name__ == '__main__':
-    container = AgentContainer()
-    while True:
-        asyncio.run(container.loop())
+    asyncio.run(main())
