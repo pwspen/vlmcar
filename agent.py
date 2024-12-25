@@ -55,7 +55,9 @@ agent = Agent(model,
                             f'sensor (the distance to the nearest object in front of you), and your'
                             f'logs from past movement cycles, move around the room to find the {target}.'
                             f'You move by sending api commands as described in the tool description.'
-                            f'Make sure to avoid obstacles - when something is close in front (dist<100), rotate.',
+                            f'Make sure to avoid obstacles! DO NOT move forward if something is very close'
+                            f'in front of you. If you get too close to something, either back up or'
+                            f'rotate. Use the distance sensor but it\'s not very reliable so be cautious.'
               result_type=ResponseType,
               result_tool_description='First argument is the movement command. Foward'
                                       'and reverse move about 1m. Rotating does about 45 deg. The second'
