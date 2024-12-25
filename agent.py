@@ -16,16 +16,6 @@ import json
 
 from api import LocalRobot
 
-class Models:
-    llama90b = 'meta-llama/llama-3.2-90b-vision-instruct'
-    novalite = 'amazon/nova-lite-v1'
-    novapro = 'amazon/nova-pro-v1'
-    qwenvl = 'qwen/qwen-2-vl-72b-instruct'
-
-class ResponseType(BaseModel):
-    command: Literal["forward", "reverse", "rot_right", "rot_left"]
-    notes: str
-
 api_key_fname = 'api_key.json'
 if not os.path.exists(api_key_fname):
     shutil.copy(api_key_fname + '.template', api_key_fname)
@@ -43,8 +33,19 @@ with open(api_key_fname) as f:
         print('Please paste your API key into api_key.json. You should have "OPENROUTER_API_KEY": "<KEY>"')
         exit(1)
 
+class Models:
+    llama90b = 'meta-llama/llama-3.2-90b-vision-instruct'
+    novalite = 'amazon/nova-lite-v1'
+    novapro = 'amazon/nova-pro-v1'
+    qwenvl = 'qwen/qwen-2-vl-72b-instruct'
+    gemini = 'google/gemini-2.0-flash-exp:free'
+
+class ResponseType(BaseModel):
+    command: Literal["forward", "reverse", "rot_right", "rot_left"]
+    notes: str
+
 model = OpenAIModel(
-    model_name=Models.qwenvl,
+    model_name=Models.gemini,
     base_url='https://openrouter.ai/api/v1',
     api_key=api_key
 )
