@@ -14,7 +14,7 @@ from typing import List, Literal
 import asyncio
 import json
 
-from claudecontrol.api import LocalRobot
+from api import LocalRobot
 
 class Models:
     llama90b = 'meta-llama/llama-3.2-90b-vision-instruct'
