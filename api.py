@@ -138,9 +138,9 @@ class LocalRobot:
     async def move_dist(self, dist):
         # 1s ~= 1m, so just route to forward or reverse directly
         if dist < 0:
-            self.reverse(duration=dist)
+            await self.reverse(duration=abs(dist))
         else:
-            self.forward(duration=dist)
+            await self.forward(duration=abs(dist))
 
     async def rotate_right(self, duration=0.4):
         """Rotate right for specified duration"""
@@ -163,10 +163,11 @@ class LocalRobot:
     async def rotate_deg(self, degrees):
         """Negative is CCW, positive is CW"""
         rot_dur = degrees * (1.4/180) # 1.4s to go 180 deg
-        if deg < 0:
-            self.rotate_left(duration=rot_dur)
+        print(f'{rot_dur=}')
+        if degrees < 0:
+            await self.rotate_left(duration=abs(rot_dur))
         else:
-            self.rotate_right(duration=rot_dur)
+            await self.rotate_right(duration=abs(rot_dur))
 
     async def finish(self, dur):
         try:
@@ -192,5 +193,5 @@ if __name__ == "__main__":
     # 0.1555s ~= 18 deg, so slight discount, but close enough!
     robot = LocalRobot()
     while True:
-        asyncio.run(robot.rotate_right(duration=0.0777))
-        asyncio.run(asyncio.sleep(1))
+        asyncio.run(robot.rotate_deg(-90))
+        asyncio.run(asyncio.sleep(2))
