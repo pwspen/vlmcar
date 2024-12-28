@@ -175,6 +175,7 @@ class AgentServer:
         if len(self.logs) > self.num_logs:
             self.logs.pop(0)
             # print(f'Snipped log, new log: {self.logs}')
+            # print(f'Snipped log, new log: {self.logs}')
 
         return result.data
 
